@@ -14,7 +14,7 @@ class DatabaseHelper {
   Future<Database> get database async {
     if (_database != null) return _database!;
     // Cambiamos a v3 para ignorar cualquier intento fallido guardado por Android
-    _database = await _initDB('gestor_ingresos_v3.db');
+    _database = await _initDB('gestor_ingresos_v4.db');
     return _database!;
   }
 
@@ -78,6 +78,8 @@ class DatabaseHelper {
       'Shopping',
       'Entertainment',
       'Utilities',
+      'Food & Dining',
+      'Health & Fitness',
       'Others'
     ];
 

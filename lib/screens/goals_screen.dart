@@ -15,6 +15,8 @@ class GoalsScreen extends StatelessWidget {
       case 'Shopping': return '🛍️';
       case 'Entertainment': return '🎬';
       case 'Utilities': return '💡';
+      case 'Food & Dining': return '🍽️';      // <-- NUEVA
+      case 'Health & Fitness': return '🏋️‍♂️';   // <-- NUEVA
       default: return '📦';
     }
   }

@@ -52,6 +52,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       case 'Transport': return '🚗';
       case 'Shopping': return '🛍️';
       case 'Entertainment': return '🎬';
+      case 'Food & Dining': return '🍽️';
+      case 'Health & Fitness': return '💪';
       case 'Utilities': return '💡';
       default: return '📦';
     }

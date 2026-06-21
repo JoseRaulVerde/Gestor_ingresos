@@ -20,6 +20,10 @@ class TransactionDetailModal extends StatelessWidget {
       case 'Shopping': return '🛍️';
       case 'Entertainment': return '🎬';
       case 'Utilities': return '💡';
+      // --- TUS DOS NUEVAS CATEGORÍAS ---
+      case 'Food & Dining': return '🍽️';
+      case 'Health & Fitness': return '🏋️‍♂️'; 
+      // ---------------------------------
       default: return '📦'; // Others
     }
   }
