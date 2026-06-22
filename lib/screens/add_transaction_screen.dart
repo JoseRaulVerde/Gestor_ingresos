@@ -6,8 +6,10 @@ import '../providers/transaction_provider.dart';
 
 class AddTransactionScreen extends StatefulWidget {
   final TransactionModel? transaction; // Si esto llega con datos, es modo Edición
+  // 1. Agregamos esta variable para recibir la fecha del calendario
+  final DateTime? initialDate;
 
-  const AddTransactionScreen({super.key, this.transaction});
+  const AddTransactionScreen({super.key, this.transaction, this.initialDate});
 
   @override
   State<AddTransactionScreen> createState() => _AddTransactionScreenState();
@@ -18,6 +20,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   final _titleController = TextEditingController();
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
+  late DateTime _selectedDate;
   
   CategoryModel? _selectedCategory;
   bool _isIncome = false; 
@@ -25,6 +28,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   @override
   void initState() {
     super.initState();
+    _selectedDate = widget.initialDate ?? DateTime.now();
     // Si abrimos la pantalla para EDITAR, pre-llenamos los datos:
     if (widget.transaction != null) {
       _titleController.text = widget.transaction!.title;
@@ -206,7 +210,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       title: _titleController.text,
                       amount: double.parse(_amountController.text),
                       description: _descriptionController.text,
-                      date: widget.transaction?.date ?? provider.selectedDate, // Mantiene la fecha original
+                      date: widget.transaction?.date ?? _selectedDate,
                       isIncome: _isIncome,
                       categoryId: _selectedCategory!.id!,
                       createdAt: widget.transaction?.createdAt ?? DateTime.now(),

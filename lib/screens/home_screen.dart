@@ -35,13 +35,62 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // --- PASO 1: AL TOCAR UN DÍA, SOLO CAMBIA LA VISTA (NO ABRE EL FORMULARIO) ---
+  void _onDaySelected(DateTime selectedDay, DateTime focusedDay) {
+    final provider = Provider.of<TransactionProvider>(context, listen: false);
+    provider.changeSelectedDate(selectedDay); // Cambia las transacciones que se ven abajo
+    
+    setState(() {
+      _focusedDay = focusedDay; // Mueve el calendario visualmente
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<TransactionProvider>(context);
     final txList = provider.transactionsForSelectedDate;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F9), // Fondo gris muy claro de tu imagen
+      backgroundColor: const Color(0xFFF4F6F9),
+      // --- PASO 2: BOTÓN FLOTANTE CON EL GUARDIÁN DE SEGURIDAD ---
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color(0xFF2C3E50), // Color elegante a juego con tu app
+        child: const Icon(Icons.add, color: Colors.white, size: 28),
+        onPressed: () {
+          final now = DateTime.now();
+          final today = DateTime(now.year, now.month, now.day);
+          final selectedDate = DateTime(provider.selectedDate.year, provider.selectedDate.month, provider.selectedDate.day);
+
+          // Si el día seleccionado en el calendario es del futuro, bloqueamos
+          if (selectedDate.isAfter(today)) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded, color: Colors.white),
+                    SizedBox(width: 10),
+                    Text('No puedes agregar registros en fechas futuras.'),
+                  ],
+                ),
+                backgroundColor: Colors.redAccent,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          } else {
+            // Si es hoy o el pasado, abre el formulario con la fecha del calendario
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => AddTransactionScreen(
+                  initialDate: provider.selectedDate,
+                ),
+              ),
+            ).then((_) {
+              setState(() {}); // Refresca al volver
+            });
+          }
+        },
+      ),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -54,7 +103,6 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Botón Izquierda
                   GestureDetector(
                     onTap: () {
                       setState(() {
@@ -72,13 +120,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   
-                  // Título del Mes
                   Text(
                     '${_meses[_focusedDay.month - 1]} ${_focusedDay.year}',
                     style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF2C3E50)),
                   ),
                   
-                  // Botón Derecha
                   GestureDetector(
                     onTap: () {
                       setState(() {
@@ -116,10 +162,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 lastDay: DateTime.utc(2030, 12, 31),
                 focusedDay: _focusedDay,
                 currentDay: DateTime.now(),
-                headerVisible: false, // Ocultamos el header feo por defecto
+                headerVisible: false,
                 startingDayOfWeek: StartingDayOfWeek.sunday,
                 
-                // Traducimos los días de la semana manualmente
                 calendarBuilders: CalendarBuilders(
                   dowBuilder: (context, day) {
                     const days = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
@@ -132,39 +177,27 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
                 
-                // Estilos del calendario para igualar tu imagen
-                // Estilos del calendario para igualar tu imagen
                 calendarStyle: CalendarStyle(
                   outsideDaysVisible: false,
                   defaultTextStyle: const TextStyle(color: Color(0xFF2C3E50), fontWeight: FontWeight.w600, fontSize: 16),
                   weekendTextStyle: const TextStyle(color: Color(0xFF2C3E50), fontWeight: FontWeight.w600, fontSize: 16),
                   
-                  // Agregamos shape: BoxShape.rectangle aquí
                   todayDecoration: const BoxDecoration(
                     color: Colors.transparent,
                     shape: BoxShape.rectangle, 
                   ),
                   todayTextStyle: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 16),
                   
-                  // Agregamos shape: BoxShape.rectangle aquí también
                   selectedDecoration: BoxDecoration(
                     color: const Color(0xFFC7D3E1),
-                    shape: BoxShape.rectangle, // <--- ESTA ES LA LÍNEA MÁGICA
+                    shape: BoxShape.rectangle,
                     borderRadius: BorderRadius.circular(14),
                   ),
                   selectedTextStyle: const TextStyle(color: Color(0xFF2C3E50), fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 
                 selectedDayPredicate: (day) => isSameDay(provider.selectedDate, day),
-                onDaySelected: (selectedDay, focusedDay) {
-                  // 1. Le avisa al Provider la nueva fecha
-                  provider.changeSelectedDate(selectedDay); 
-                  
-                  // 2. Mueve visualmente el calendario a esa fecha
-                  setState(() {
-                    _focusedDay = focusedDay; 
-                  });
-                },
+                onDaySelected: _onDaySelected, // Usa nuestra función limpia
                 onPageChanged: (focusedDay) {
                   setState(() {
                     _focusedDay = focusedDay;
@@ -208,7 +241,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           key: Key(tx.id.toString()),
                           direction: DismissDirection.horizontal, 
                           
-                          // --- FONDO SECUNDARIO (Derecha a Izquierda -> BORRAR) ---
                           secondaryBackground: Container(
                             margin: const EdgeInsets.only(bottom: 10),
                             alignment: Alignment.centerRight,
@@ -217,7 +249,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: const Icon(Icons.delete_outline, color: Colors.white, size: 30),
                           ),
 
-                          // --- FONDO PRINCIPAL (Izquierda a Derecha -> EDITAR) ---
                           background: Container(
                             margin: const EdgeInsets.only(bottom: 10),
                             alignment: Alignment.centerLeft,
@@ -226,10 +257,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: const Icon(Icons.edit, color: Colors.white, size: 30),
                           ),
                           
-                          // LÓGICA DE CONFIRMACIÓN CON MODALES
                           confirmDismiss: (direction) async {
                             if (direction == DismissDirection.endToStart) {
-                              // MODAL PARA BORRAR
                               return await showDialog(
                                 context: context,
                                 builder: (BuildContext context) {
@@ -249,7 +278,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                 },
                               );
                             } else if (direction == DismissDirection.startToEnd) {
-                              // MODAL PARA EDITAR
                               final bool? confirmEdit = await showDialog(
                                 context: context,
                                 builder: (BuildContext context) {
@@ -269,9 +297,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 },
                               );
 
-                              // Si el usuario presiona "Editar" en el modal
                               if (confirmEdit == true) {
-                                // Ignoramos el error de BuildContext usando un pequeño retraso
                                 Future.microtask(() {
                                   Navigator.push(
                                     context,
@@ -279,7 +305,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                   );
                                 });
                               }
-                              // Siempre devolvemos false para que la tarjeta no se borre visualmente de la lista
                               return false; 
                             }
                             return false;
@@ -292,14 +317,12 @@ class _HomeScreenState extends State<HomeScreen> {
                             }
                           },
                           
-                          // --- LA TARJETA ORIGINAL INTACTA ---
                           child: Card(
                             elevation: 0,
                             color: Colors.white,
                             margin: const EdgeInsets.only(bottom: 10),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             child: ListTile(
-                              // --- NUEVO: EVENTO ON TAP PARA VER DETALLES ---
                               onTap: () {
                                 showDialog(
                                   context: context,
@@ -309,7 +332,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 );
                               },
-                              // ----------------------------------------------
                               leading: CircleAvatar(
                                 backgroundColor: tx.isIncome ? Colors.green[50] : Colors.red[50],
                                 child: Icon(tx.isIncome ? Icons.arrow_upward : Icons.arrow_downward, color: tx.isIncome ? Colors.green : Colors.red),
