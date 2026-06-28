@@ -4,6 +4,7 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/transaction_model.dart';
 import '../models/category_model.dart';
+import '../models/payment_method_model.dart'; // Asegúrate de tener este import
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
@@ -13,8 +14,8 @@ class DatabaseHelper {
 
   Future<Database> get database async {
     if (_database != null) return _database!;
-    // Cambiamos a v3 para ignorar cualquier intento fallido guardado por Android
-    _database = await _initDB('gestor_ingresos_v4.db');
+    // Cambiamos a v6 para asegurar que la tabla transactions se cree con el nuevo campo
+    _database = await _initDB('gestor_ingresos_v7.db');
     return _database!;
   }
 
@@ -36,6 +37,7 @@ class DatabaseHelper {
     const boolType = 'INTEGER NOT NULL';
     const realType = 'REAL NOT NULL';
     const integerType = 'INTEGER NOT NULL';
+    const integerTypeNull = 'INTEGER'; // Agregamos este tipo para el método de pago opcional
 
     // 1. Crear Tabla Categorías
     await db.execute('''
@@ -45,7 +47,7 @@ class DatabaseHelper {
       )
     ''');
 
-    // 2. Crear Tabla Transacciones (Corregida sin duplicados y blindada)
+    // 2. Crear Tabla Transacciones (AHORA INCLUYE paymentMethodId)
     await db.execute('''
       CREATE TABLE IF NOT EXISTS transactions (
         id $idType,
@@ -55,8 +57,25 @@ class DatabaseHelper {
         date $textType,
         isIncome $boolType,
         categoryId $integerType,
+        paymentMethodId $integerTypeNull, 
         createdAt $textType,
         updatedAt $textType,
+        FOREIGN KEY (categoryId) REFERENCES categories (id) ON DELETE CASCADE,
+        FOREIGN KEY (paymentMethodId) REFERENCES payment_methods (id) ON DELETE SET NULL
+      )
+    ''');
+
+    // 3. Crear Tabla Metas v7 (Con rangos de tiempo y tipo de límite)
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS goals (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        categoryId INTEGER NOT NULL,
+        targetAmount REAL NOT NULL,
+        currentAmount REAL NOT NULL,
+        startDate TEXT NOT NULL,
+        endDate TEXT NOT NULL,
+        isExpenseMeta INTEGER NOT NULL,
         FOREIGN KEY (categoryId) REFERENCES categories (id) ON DELETE CASCADE
       )
     ''');
@@ -69,8 +88,23 @@ class DatabaseHelper {
         amount REAL NOT NULL
       )
     ''');
+    
+    // 4. Crear Tabla Métodos de Pago
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS payment_methods (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        icon TEXT
+      )
+    ''');
 
-    // 4. Insertar categorías por defecto
+    // Insertar métodos por defecto (Opcional)
+    List<String> defaultMethods = ['Efectivo', 'Tarjeta de Débito', 'Tarjeta de Crédito', 'Transferencia'];
+    for (String method in defaultMethods) {
+      await db.insert('payment_methods', {'name': method, 'icon': '💳'});
+    }
+
+    // Insertar categorías por defecto
     List<String> defaultCategories = [
       'Salary/Income',
       'Groceries',
@@ -146,5 +180,39 @@ class DatabaseHelper {
   Future close() async {
     final db = await instance.database;
     db.close();
+  }
+
+  // ==========================================
+  // CRUD PARA MÉTODOS DE PAGO
+  // ==========================================
+
+  Future<int> insertPaymentMethod(PaymentMethodModel method) async {
+    final db = await instance.database;
+    return await db.insert('payment_methods', method.toMap());
+  }
+
+  Future<List<PaymentMethodModel>> getPaymentMethods() async {
+    final db = await instance.database;
+    final result = await db.query('payment_methods', orderBy: 'name ASC');
+    return result.map((json) => PaymentMethodModel.fromMap(json)).toList();
+  }
+
+  Future<int> updatePaymentMethod(PaymentMethodModel method) async {
+    final db = await instance.database;
+    return await db.update(
+      'payment_methods',
+      method.toMap(),
+      where: 'id = ?',
+      whereArgs: [method.id],
+    );
+  }
+
+  Future<int> deletePaymentMethod(int id) async {
+    final db = await instance.database;
+    return await db.delete(
+      'payment_methods',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 }

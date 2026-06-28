@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gestor_ingresos/widget/payment_methods_chart.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../providers/transaction_provider.dart';
@@ -40,8 +41,9 @@ class ReportsScreen extends StatelessWidget {
             children: [
               const Padding(
                 padding: EdgeInsets.fromLTRB(20, 20, 20, 10),
-                child: Text('Financial Reports', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF2C3E50))),
+                child: Text('Mis Reportes', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF2C3E50))),
               ),
+              const PaymentMethodsChart(),
 
               // ==========================================
               // GRÁFICA 1: TASA DE AHORRO (SAVINGS RATE)

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart'; // <-- NUEVO IMPORT
 import '../models/transaction_model.dart';
+import '../providers/payment_method_provider.dart'; // <-- NUEVO IMPORT
 
 class TransactionDetailModal extends StatelessWidget {
   final TransactionModel transaction;
@@ -20,10 +22,8 @@ class TransactionDetailModal extends StatelessWidget {
       case 'Shopping': return '🛍️';
       case 'Entertainment': return '🎬';
       case 'Utilities': return '💡';
-      // --- TUS DOS NUEVAS CATEGORÍAS ---
       case 'Food & Dining': return '🍽️';
       case 'Health & Fitness': return '🏋️‍♂️'; 
-      // ---------------------------------
       default: return '📦'; // Others
     }
   }
@@ -34,9 +34,23 @@ class TransactionDetailModal extends StatelessWidget {
     // Formato de fecha básico: DD/MM/AAAA
     final dateStr = "${transaction.date.day}/${transaction.date.month}/${transaction.date.year}";
 
+    // --- LÓGICA PARA OBTENER EL MÉTODO DE PAGO ---
+    final pmProvider = Provider.of<PaymentMethodProvider>(context, listen: false);
+    String? paymentMethodDisplay;
+    
+    if (transaction.paymentMethodId != null) {
+      try {
+        final pm = pmProvider.paymentMethods.firstWhere((p) => p.id == transaction.paymentMethodId);
+        paymentMethodDisplay = '${pm.icon ?? '💳'}  ${pm.name}';
+      } catch (e) {
+        paymentMethodDisplay = '💳  Unknown'; // Por si el método fue borrado
+      }
+    }
+    // ---------------------------------------------
+
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      contentPadding: const EdgeInsets.all(24), // <-- El error está aquí
+      contentPadding: const EdgeInsets.all(24),
       backgroundColor: Colors.white,
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -101,6 +115,12 @@ class TransactionDetailModal extends StatelessWidget {
           // --- Fila: Categoría ---
           _buildDetailRow('Category', '${_getCategoryIcon(categoryName)}  $categoryName'),
           const SizedBox(height: 12),
+
+          // --- NUEVA FILA: Método de Pago (Solo si existe) ---
+          if (paymentMethodDisplay != null) ...[
+            _buildDetailRow('Payment Method', paymentMethodDisplay),
+            const SizedBox(height: 12),
+          ],
 
           // --- Fila: Fecha ---
           _buildDetailRow('Date Recorded', dateStr),
